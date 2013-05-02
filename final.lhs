@@ -1,4 +1,4 @@
-Final Project
+Final Project for CPSC 431 Spring 2013, Yale University 
 Kenta Koga, Cezar Mocan
 
 After loading final.lhs into ghci, run finalProject. 
