@@ -125,6 +125,7 @@ Create Radio buttons for setting the scale
 >                           else if (scale == 1) then bluesScale
 >                           else if (scale == 2) then dorianScale
 >							else if (scale == 3) then phrysianScale
+>							else normalScale
 
 
 Create Radio buttons for setting the key  
