@@ -46,8 +46,13 @@ and distance to the new pitch (between -4 and and +4) they return the new pitch 
 > stringToPitch [] = -1
 > stringToPitch s = (if (null (reads s :: [(Pitch, String)])) then -1 else absPitch(read s::Pitch))
 
+
+For default scales (modes) that users can choose to play from. Depending on the scale/mode of the song to improvise, user should set the right key with right scale before improvising. 
+
 > normalScale = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
-> bluesScale1 = [3, 5, 6, 7, 10, 12]
+> bluesScale = [3, 5, 6, 7, 10, 12]
+> dorianScale = [2, 3, 5, 7, 9, 10, 12]
+> phrygianScale = [1, 3, 5, 7, 8, 10, 12]
 
 
 > findElementPos t list (-1) = -1
@@ -112,14 +117,17 @@ and distance to the new pitch (between -4 and and +4) they return the new pitch 
 >   pressEvVolumeUp <- edge -< (if ((last str) == '.' || (last str) == '>') then True else False)
 >   pressEvVolumeDown <- edge -< (if ((last str) == ',' || (last str) == '<') then True else False)
 
-HERE FOR NEW SCALE
+Create Radio buttons for setting the scale 
 
->   scale <- setSize (600, 60) . title "Scale select" . leftRight $ radio ["Normal", "Blues 1"] 0 -< ()
+>   scale <- setSize (600, 60) . title "Scale select" . leftRight $ radio ["Normal", "Blues", "Dorian", "Phrygian"] 0 -< ()
 >   changedScale <- unique -< scale
 >   let currentScale = if (scale == 0) then normalScale 
->                           else if (scale == 1) then bluesScale1
->                           else []
+>                           else if (scale == 1) then bluesScale
+>                           else if (scale == 2) then dorianScale
+>							else if (scale == 3) then phrysianScale
 
+
+Create Radio buttons for setting the key  
 
 >   key <- setSize (600, 60) . title "Key select" . leftRight $ radio ["C", "D", "E", "F", "G", "A", "B"] 0 -< ()
 >   changedKey <- unique -< key
