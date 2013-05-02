@@ -1,6 +1,32 @@
 Final Project
 Kenta Koga, Cezar Mocan
 
+After loading final.lhs into ghci, run finalProject. 
+
+Important comments: 
+Controls (not case sensitive):
+Same note as before:      G
+Next note in scale:       H
+Second next in scale:     J
+Third next in scale:      K
+Fourth next in scale:     L
+Previous note in scale:   F
+Second previous in scale: D
+Third previous in scale:  S
+Fourth previous in scale: A
+Volume up:                . or >
+Volume down:              , or <
+Reset pitch value to key value: R
+
+Always before using the keyboard controls select the text box (aka write in the textbox), that is where the program takes its input from. 
+We made the textbox always store the last typed character and delete it exactly after storing, such that its buffer won't overflow. (rec str <- textbox " " -< " ").
+According to the character found in str, we create events. (one event for one character - these are the pressEvPlusXB / pressEvMinusXB / pressEvResetB).
+In the same way we create events for the buttons corresponding to the keyboard actions (these are the ones without a B in the end, pressEvPlusX / pressEvMinusX ...)
+We have the currPitch variable, managed with the "accum" mediator and the functions newPitchBPlus and newPitchBMinus (for a given scale, key, current pitch 
+and distance to the new pitch (between -4 and and +4) they return the new pitch that respects the scale and the key)
+
+
+
 > {-# LANGUAGE Arrows #-}
 > {-# LANGUAGE ForeignFunctionInterface #-}
 
@@ -20,9 +46,6 @@ Kenta Koga, Cezar Mocan
 > stringToPitch [] = -1
 > stringToPitch s = (if (null (reads s :: [(Pitch, String)])) then -1 else absPitch(read s::Pitch))
 
-48 is for the Reset button
-
-
 > normalScale = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
 > bluesScale1 = [3, 5, 6, 7, 10, 12]
 
@@ -39,8 +62,15 @@ Kenta Koga, Cezar Mocan
 >                   if (n + x < 128) then n + x 
 >                   else 127
 >               else 1
-> newPitchB list key x n = let position = findElementPos (getElement key n) list ((length list) - 1)
->                           in n + (((list !! ((position + x) `mod` (length list))) + 12 - (list !! position)) `mod` 12)
+
+> newPitchBMinus list key x n = let position = findElementPos (getElement key n) list ((length list) - 1)
+>                                   value = (((list !! position) - (list !! ((position + x + (length list)) `mod` (length list))) + 12) `mod` 12) 
+>                               in if (n - value > 0 && n - value < 128) then n - value else n
+
+> newPitchBPlus list key 48 n = key
+> newPitchBPlus list key x n = let position = findElementPos (getElement key n) list ((length list) - 1)
+>                                  value = ((((list !! ((position + x + (length list)) `mod` (length list))) + 12 - (list !! position))) `mod` 12)
+>                              in if (n + value > 0 && n + value < 128) then n + value else n
 
 
 > newVolume x n = if (n + x >= 0) then 
@@ -82,19 +112,39 @@ Kenta Koga, Cezar Mocan
 >   pressEvVolumeUp <- edge -< (if ((last str) == '.' || (last str) == '>') then True else False)
 >   pressEvVolumeDown <- edge -< (if ((last str) == ',' || (last str) == '<') then True else False)
 
->   currPitch <- accum 48 -< (((pressEvPlus1 .|. pressEvPlus1B) ->> (newPitchB bluesScale1 48 1))        .|. 
->                             ((pressEvPlus2 .|. pressEvPlus2B) ->> (newPitch 2))        .|.
->                             ((pressEvPlus3 .|. pressEvPlus3B) ->> (newPitch 3))      .|.
->                             ((pressEvPlus4 .|. pressEvPlus4B) ->> (newPitch 4))       .|. 
->                             ((pressEvMinus1 .|. pressEvMinus1B) ->> (newPitch (-1)))    .|.
->                             ((pressEvMinus2 .|. pressEvMinus2B) ->> (newPitch (-2)))    .|.
->                             ((pressEvMinus3 .|. pressEvMinus3B) ->> (newPitch (-3)))  .|.
->                             ((pressEvMinus4 .|. pressEvMinus4B) ->> (newPitch (-4))) .|.
->                             ((pressEvReset .|. pressEvResetB) ->> (newPitch (48))))   
+HERE FOR NEW SCALE
+
+>   scale <- setSize (600, 60) . title "Scale select" . leftRight $ radio ["Normal", "Blues 1"] 0 -< ()
+>   changedScale <- unique -< scale
+>   let currentScale = if (scale == 0) then normalScale 
+>                           else if (scale == 1) then bluesScale1
+>                           else []
+
+
+>   key <- setSize (600, 60) . title "Key select" . leftRight $ radio ["C", "D", "E", "F", "G", "A", "B"] 0 -< ()
+>   changedKey <- unique -< key
+>   let currentKey = if (key == 0) then 48
+>                       else if (key == 1) then 50
+>                       else if (key == 2) then 52
+>                       else if (key == 3) then 53
+>                       else if (key == 4) then 55
+>                       else if (key == 5) then 57
+>                       else if (key == 6) then 59
+>                       else 48
+
+>   currPitch <- accum 48 -< (((pressEvPlus1 .|. pressEvPlus1B) ->> (newPitchBPlus currentScale currentKey 1))        .|. 
+>                             ((pressEvPlus2 .|. pressEvPlus2B) ->> (newPitchBPlus currentScale currentKey 2))        .|.
+>                             ((pressEvPlus3 .|. pressEvPlus3B) ->> (newPitchBPlus currentScale currentKey 3))      .|.
+>                             ((pressEvPlus4 .|. pressEvPlus4B) ->> (newPitchBPlus currentScale currentKey 4))       .|. 
+>                             ((pressEvMinus1 .|. pressEvMinus1B) ->> (newPitchBMinus currentScale currentKey (-1)))    .|.
+>                             ((pressEvMinus2 .|. pressEvMinus2B) ->> (newPitchBMinus currentScale currentKey (-2)))    .|.
+>                             ((pressEvMinus3 .|. pressEvMinus3B) ->> (newPitchBMinus currentScale currentKey (-3)))  .|.
+>                             ((pressEvMinus4 .|. pressEvMinus4B) ->> (newPitchBMinus currentScale currentKey (-4))) .|.
+>                             ((pressEvReset .|. pressEvResetB .|. (changedScale ->> ()) .|. (changedKey ->> ()) ) ->> (newPitchBPlus currentScale currentKey 48)))   
 
 >   volume <- accum 50 -< ((pressEvVolumeUp ->> newVolume 5) .|. (pressEvVolumeDown ->> newVolume (-5)))
 
->   title "Current Pitch" display -< currPitch
+>   title "Current Pitch" display -< pitch currPitch
 >   dur <- setSize (600,60) . title "Note length" . leftRight $ 
 >           radio ["Whole","Half","Quarter","Eighth","Sixteenth"] 2 -< ()
 >   instr <- setSize (800,60) . title "Instrument" . leftRight $ 
@@ -117,4 +167,4 @@ Kenta Koga, Cezar Mocan
 >       midiMsgs = progChan .|. note
 >   midiOut -< (devidOut, midiMsgs)                    
    
-> mui0_8 = runUIEx (800, 500) "Simple Pitch" ui0_8
+> finalProject = runUIEx (800, 500) "Simple Pitch" ui0_8
